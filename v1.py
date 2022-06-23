@@ -50,7 +50,7 @@ def main():
 
 
     ####################################################################################################################################
-    # Update of equity curve -> Updates between 6AM and 7AM SG Time every day
+    # Update of equity curve -> Updates between 10PM and 11PM UTC time
 
     
     config = read_json('config.json')
@@ -58,7 +58,7 @@ def main():
     current_hour = datetime.datetime.now().hour
     current_date = datetime.datetime.now().date()
 
-    if current_hour <= 7 and current_hour >= 6:
+    if current_hour <= 11 and current_hour >= 10:
         if not updated:
             # Get previous values
             cursor.execute("""
