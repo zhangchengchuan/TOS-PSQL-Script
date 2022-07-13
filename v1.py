@@ -29,8 +29,9 @@ def main():
     # Get previous "current info" first to compare maxdrawdown and highwater
     cursor.execute("SELECT * FROM current_information;")
     prev = cursor.fetchone()
-    new_highwater = max(acc_info[0], prev[6]) 
-    new_max_drawdown = ((new_highwater - acc_info[0])/acc_info[0]) * 100
+    new_highwater = max(acc_info[0], prev[5]) # Check if previous highwater is larger than current account_value
+    current_drawdown = ((new_highwater - acc_info[0])/new_highwater) * 100
+    new_max_drawdown = max(current_drawdown, prev[6]) # Check if previous max_drawdown is lower than the current drawdown
 
     # Delete previous "current info"
     cursor.execute("""
@@ -40,10 +41,10 @@ def main():
 
     # Insert
     cursor.execute("""
-        INSERT INTO current_information (value, cash, margin, long_value, short_value, highwater, max_drawdown)
-        VALUES (%s, %s, %s, %s, %s, %s, %s);
+        INSERT INTO current_information (value, cash, margin, long_value, short_value, highwater, max_drawdown, current_drawdown)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
         """, 
-        (acc_info[0], acc_info[1], acc_info[2], acc_info[3], acc_info[4], new_highwater, new_max_drawdown))
+        (acc_info[0], acc_info[1], acc_info[2], acc_info[3], acc_info[4], new_highwater, new_max_drawdown, current_drawdown))
     connection.commit()
 
 
@@ -58,13 +59,15 @@ def main():
     current_hour = datetime.datetime.now().hour
     current_date = datetime.datetime.now().date()
 
-    if current_hour <= 11 and current_hour >= 10:
+    if current_hour <= 12 and current_hour >= 10:
         if not updated:
             # Get previous values
             cursor.execute("""
                 SELECT * FROM account_values ORDER BY id DESC LIMIT 1;
                 """)  
             prev = cursor.fetchone()
+
+            # Update daily PnL
             percent_change = ((acc_info[0] - prev[2]) / prev[2]) * 100
             absolute_change = acc_info[0] - prev[2]
 
@@ -74,6 +77,9 @@ def main():
                 """,
                 (current_date, acc_info[0], percent_change, absolute_change))
             connection.commit()
+
+
+
 
             # Change flag to 1 after updating
             config['dailyUpdate'] = 1
@@ -103,6 +109,8 @@ def main():
     cursor.close()
     connection.close()
     print(f'Routine update complete at {datetime.datetime.now()}')
+
+
 
 if __name__ == "__main__":
     main()

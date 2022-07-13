@@ -21,9 +21,3 @@ def logindb():
     cursor = connection.cursor()
     return connection, cursor
 
-# def account():
-#     
-# 
-# 
-# 
-

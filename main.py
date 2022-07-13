@@ -10,7 +10,7 @@ from pprint import *
 import edit_json
 import access
 from api import api_call
-from formatting import format_account_info, format_trade, format_account_info
+from formatting import format_account_info, format_trade, format_account_info, organize_trades
 
 def main():
     # access.login()
@@ -20,31 +20,37 @@ def main():
 
 # # Fetch account details
     # Current account value - Store First value as initial capital
-    acc_info = api_call("ACCOUNT_INFO")
-    entry = format_account_info(acc_info)
-    insert_query = f'''
-    INSERT INTO account_info()
-    '''
+    # acc_info = format_account_info(api_call("ACCOUNT_INFO"))
+    # pprint(acc_info[0])
+    # entry = format_account_info(acc_info)
+    # insert_query = f'''
+    # INSERT INTO account_info()
+    # '''
 
 ####################################################################################################################################
 
 
 
-#     # Past Trades
-#     past_trades = api_call("TRANSACTIONS")
-    
-#     for trade in past_trades:
-#         if trade['type'] == "TRADE":
-#             entry = format_trade(trade)
-#             insert_query = f'''
-#             INSERT INTO past_trades(ticker, asset, buysell, quantity, price, total, cusip, date)
-#             VALUES ('{entry[0]}', '{entry[1]}', '{entry[2]}', {entry[3]}, {entry[4]}, {entry[5]}, '{entry[6]}', '{entry[7]}')
-#             '''
-#             # if cusip already exists, then dont add to database
+    # # Past Trades
+    past_trades = api_call("ACCOUNT_INFO")
+    # past_trades = api_call("TRANSACTIONS")
+    # print(past_trades)
+    # print(organize_trades(past_trades))
+    pprint(past_trades)
 
-#             cursor.execute(insert_query)
-#             connection.commit()
-#             return 
+    
+    # for trade in past_trades:
+    #     if trade['type'] == "TRADE":
+    #         entry = format_trade(trade)
+    #         insert_query = f'''
+    #         INSERT INTO past_trades(ticker, asset, buysell, quantity, price, total, cusip, date)
+    #         VALUES ('{entry[0]}', '{entry[1]}', '{entry[2]}', {entry[3]}, {entry[4]}, {entry[5]}, '{entry[6]}', '{entry[7]}')
+    #         '''
+    #         # if cusip already exists, then dont add to database
+
+    #         cursor.execute(insert_query)
+    #         connection.commit()
+    #         break
 
 
 
