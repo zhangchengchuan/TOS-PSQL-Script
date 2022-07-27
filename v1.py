@@ -12,7 +12,7 @@ from pprint import *
 
 import access
 from api import api_call
-from formatting import format_account_info, format_trade, format_account_info
+from formatting import format_account_info, format_trade, format_account_info, organize_trades
 from edit_json import read_json, change_json_file
 
 
@@ -59,8 +59,9 @@ def main():
     current_hour = datetime.datetime.now().hour
     current_date = datetime.datetime.now().date()
 
-    if current_hour <= 12 and current_hour >= 10:
+    if current_hour <= 12 and current_hour >= 11:
         if not updated:
+
             # Get previous values
             cursor.execute("""
                 SELECT * FROM account_values ORDER BY id DESC LIMIT 1;
@@ -77,9 +78,6 @@ def main():
                 """,
                 (current_date, acc_info[0], percent_change, absolute_change))
             connection.commit()
-
-
-
 
             # Change flag to 1 after updating
             config['dailyUpdate'] = 1
@@ -99,6 +97,46 @@ def main():
 
     ####################################################################################################################################
     # Open positions and metadata - Ticker, Name, Average, Last Price, Quantity, % of capital
+
+    # Fetch new trades
+    new_trades = api_call("TRANSACTIONS")
+
+    # If no new trades, do nothing.
+    if new_trades is not None:
+
+        # Fetch
+        cursor.execute("SELECT * FROM trades;")
+        unpickled_prev_trades = cursor.fetchone()
+
+        # Unpickle
+        prev_trades = []
+        for trade in unpickled_prev_trades:
+            unserialized = pickle.loads(trade)
+            prev_trades.append(unserialized)
+
+        # Truncate
+        cursor.execute("TRUNCATE trades;")
+        connection.commit()
+
+        # Update
+        updated_trades = organize_trades(prev_trades, new_trades)
+
+        # Pickle 
+        serialized_trades = []
+        for trade in updated_trades:
+            serialized = pickle.dumps(trade)
+            serialized_trades.append(serialized)
+
+        # Commit to DB
+        cursor.execute("""
+            INSERT INTO trades (open, close, cusip_list)
+            VALUES (%s, %s, %s);
+            """,
+            (serialized_trades[0],serialized_trades[1],serialized_trades[2]))
+        connection.commit()
+
+
+    ####################################################################################################################################
     # Fetch ticker and index symbols
 
 

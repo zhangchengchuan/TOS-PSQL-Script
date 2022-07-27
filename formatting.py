@@ -1,6 +1,9 @@
 from pprint import *
 from api import api_call
 
+# for testing
+import pickle
+
 def format_trade(trade: dict) -> list:
     try:
         date = trade['settlementDate']
@@ -29,61 +32,45 @@ def format_account_info(acc_info) -> list:
     except:
         return
 
-def organize_trades(trades: dict) -> list:
-    open = dict() # cusip: [quantity, [list of trades]]
-    close = dict() # cusip: [list of closed trades]
-    cusip_list = dict() # cusip: quantity
+def organize_trades(prev_trades, new_trades: dict) -> list:
+    open = prev_trades[0] # cusip: [quantity, [list of trades]]
+    close = prev_trades[1] # cusip: [list of closed trades]
+    cusip_list = prev_trades[2] # cusip: quantity
 
-    trades = list(map(format_trade, trades))
+    trades = list(map(format_trade, new_trades))
 
     for trade in trades:
-        cusip = trade[6]
+        cusip = trade[0]
         quantity  = trade[3] if trade[2] == "BUY" else -1 * trade[3]
         if cusip not in cusip_list:
             cusip_list[cusip] = quantity
+            open[cusip] = []
+            open[cusip].append(trade)
+        else:
+                open[cusip].append(trade)
+                new_val = cusip_list[cusip] + quantity
+                
+                # Quantity netted out to 0 -> Update close list
+                if new_val == 0:
+                    if cusip not in close:
+                        close[cusip] = open[cusip]
+                    else:
+                        close[cusip].extend(open[cusip])
 
+                    # reset the current open list and reset current count
+                    open[cusip] = []
+                    cusip_list[cusip] = 0
+                else:
+                    cusip_list[cusip] = new_val
 
-    return trades
-
-####################################################################################################################################
-
-    # TRANSACTION HISTORY
-
-    # Getting pickle first
-    
-    # past_trades = api_call("TRANSACTIONS")
-    # pickled_trades = open("trades.pkl", "wb")
-    # pickle.dump(past_trades, pickled_trades)
-    # pickled_trades.close()
-    
-    # # [ticker, asset, buysell, quantity, price, total, cusip6, date7] 
-
-    # pickled_trades = pickle.load(open("trades.pkl","rb"))
-    # cusip_list = {}
-    # close = {}
-    # opened = {}
-    # for trade in pickled_trades[::-1]:
-    #     formatted_trade = format_trade(trade)
-    #     if formatted_trade is None:
-    #         pass
-    #     else:
-    #         cusip = formatted_trade[6]
-    #         quantity  = formatted_trade[3] if formatted_trade[2] == "BUY" else -1 * formatted_trade[3]
-    #         if cusip not in cusip_list:
-    #             cusip_list[cusip] = quantity
-    #             opened[cusip] = quantity
-    #         else:
-    #             val = cusip_list[cusip]
-    #             new_val = val + quantity
-    #             if new_val == 0:
-    #                 opened.pop(cusip)
-    #                 close[cusip] = 1 # there is transaction of this cusip closed
-    #             else:
-    #                 opened[cusip] = new_val
-
-    # pprint(opened)
+    # pprint(cusip_list)
     # pprint(close)
+    # pprint(open)
 
-####################################################################################################################################
+    return open, close, cusip_list
 
+
+# # For testing
+# pickled_trades = pickle.load(open("trades.pkl", 'rb'))
+# organize_trades(pickled_trades)
 
